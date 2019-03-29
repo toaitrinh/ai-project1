@@ -25,6 +25,7 @@ def main():
     temp_dict = {}
     for i in board.keys():
         temp_dict[i] = board[i].cost
+
     print_board(temp_dict) 
 
     search_one(board, data['pieces'][0], exit) 
@@ -39,6 +40,7 @@ class Piece:
 
 
 class Hex:
+
     def __init__(self, cost, neighbours, colour, coordinates):
         self.cost = cost
         self.neighbours = neighbours
@@ -55,6 +57,7 @@ def add_hexes(data):
     board = {}
     for i in range(-3,1):
         for j in range(-3-i, 4):
+
             board[(i,j)] = Hex(1000, [], 'white', (i,j))
     for i in range(1,4):
         for j in range(-3,4-i):
@@ -127,7 +130,6 @@ def search_one(board, piece, exit):
 
         print(f"MOVE from {coordinate} to {next_coordinate}")
         coordinate = next_coordinate
-        
 
 
 def print_board(board_dict, message="", debug=True, **kwargs):
