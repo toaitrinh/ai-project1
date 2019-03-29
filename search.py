@@ -99,26 +99,30 @@ def assign_cost(board, queue):
                 queue.append(i.coordinates)
 
 def single_move(board, piece, exit):
+    coordinate = tuple(piece)
+    colour = board[coordinate].colour
+    
+    neighbours2 = sorted([(n.cost, n.coordinates) for n in board[coordinate].neighbours])
+    mincost = neighbours2[0][0]
+    neighbours3 = [neighbours2.pop(0)[1]]
+    while neighbours2 and neighbours2[0][0] == mincost:
+        neighbours3.append(neighbours2.pop(0)[1])
+    # direction of travel -- along paths
+    if coordinate[1] <= 0 and (coordinate[0] + 1, coordinate[1]) in neighbours3:
+        next_coordinate = (coordinate[0] + 1, coordinate[1])
+    elif (coordinate[0] + coordinate[1] >= 0) and (coordinate[0]+1, coordinate[1]+1) in neighbours3:
+        next_coordinate = (coordinate[0]+1, coordinate[1]+1)
+    else:
+        next_coordinate = neighbours3[0]
+
+    return next_coordinate
 
 
 def search_one(board, piece, exit):
     coordinate = tuple(piece)
     colour = board[coordinate].colour
     while coordinate not in exit:
-        neighbours2 = sorted([(n.cost, n.coordinates) for n in board[coordinate].neighbours])
-        mincost = neighbours2[0][0]
-        neighbours3 = [neighbours2.pop(0)[1]]
-        while neighbours2 and neighbours2[0][0] == mincost:
-            neighbours3.append(neighbours2.pop(0)[1])
-        
-        # direction of travel -- along paths
-        if coordinate[1] <= 0 and (coordinate[0] + 1, coordinate[1]) in neighbours3:
-            next_coordinate = (coordinate[0] + 1, coordinate[1])
-        elif (coordinate[0] + coordinate[1] >= 0) and (coordinate[0]+1, coordinate[1]+1) in neighbours3:
-            next_coordinate = (coordinate[0]+1, coordinate[1]+1)
-        else:
-            next_coordinate = neighbours3[0]
-
+        next_coordinate = single_move(board, coordinate, exit)
         # printing moves
         if next_coordinate[0] == coordinate[0] + 2 or next_coordinate[1] == coordinate[1] + 2:
             print(f"JUMP from {coordinate} to {next_coordinate}.")
