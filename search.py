@@ -25,11 +25,9 @@ def main():
     temp_dict = {}
     for i in board.keys():
         temp_dict[i] = board[i].cost
-    print_board(temp_dict)
+    print_board(temp_dict) 
 
-    path_print(board, data)
-
-
+    search_one(board, data['pieces'][0], exit) 
     
     # TODO: Search for and output winning sequence of moves
     # ...
@@ -41,12 +39,11 @@ class Piece:
 
 
 class Hex:
-    def __init__(self, cost, neighbours, colour, coordinates, nextp):
+    def __init__(self, cost, neighbours, colour, coordinates):
         self.cost = cost
         self.neighbours = neighbours
         self.colour = colour
         self.coordinates = coordinates
-        self.nextp = nextp
 
     def new_print(self):
         printlist = []
@@ -58,10 +55,10 @@ def add_hexes(data):
     board = {}
     for i in range(-3,1):
         for j in range(-3-i, 4):
-            board[(i,j)] = Hex(1000, [], 'white', (i,j), None)
+            board[(i,j)] = Hex(1000, [], 'white', (i,j))
     for i in range(1,4):
         for j in range(-3,4-i):
-            board[(i,j)] = Hex(1000, [], 'white', (i,j), None)
+            board[(i,j)] = Hex(1000, [], 'white', (i,j))
 
     for piece in data['pieces']:
         board[tuple(piece)].colour = data['colour']
@@ -107,19 +104,30 @@ def assign_cost(board, queue):
             if i.cost > (curr.cost + 1):
                 i.cost = curr.cost + 1
                 queue.append(i.coordinates)
-                i.nextp = curr.coordinates
 
-def path_print(board, data):
-    for piece in data['pieces']:
-        tpiece = tuple(piece)
-        while board[tpiece].cost > 1:
-            if (abs(board[tpiece].nextp[0] - tpiece[0]) == 2) or (abs(board[tpiece].nextp[1] - tpiece[1]) == 2):
-                print(f"JUMP from {tpiece} to {board[tpiece].nextp}.")
-                tpiece = board[tpiece].nextp
-            else:
-                print(f"MOVE from {tpiece} to {board[tpiece].nextp}.")
-                tpiece = board[tpiece].nextp
-        print(f"EXIT from {tpiece}.")
+def search_one(board, piece, exit):
+    coordinate = tuple(piece)
+    colour = board[coordinate].colour
+    while coordinate not in exit:
+        neighbours = board[coordinate].neighbours
+        neighbours2 = [(n.cost, n.coordinates) for n in neighbours]
+        neighbours2 = sorted(neighbours2)
+        mincost = neighbours2[0][0]
+        neighbours3 = [neighbours2.pop(0)[1]]
+        while neighbours2 and neighbours2[0][0] == mincost:
+            neighbours3.append(neighbours2.pop(0)[1])
+        
+        if coordinate[1] <= 0 and (coordinate[0] + 1, coordinate[1]) in neighbours3:
+            next_coordinate = (coordinate[0] + 1, coordinate[1])
+        elif (coordinate[0] + coordinate[1] >= 0) and (coordinate[0]+1, coordinate[1]+1) in neighbours3:
+            next_coordinate = (coordinate[0]+1, coordinate[1]+1)
+        else:
+            next_coordinate = neighbours3[0]
+
+
+        print(f"MOVE from {coordinate} to {next_coordinate}")
+        coordinate = next_coordinate
+        
 
 
 def print_board(board_dict, message="", debug=True, **kwargs):
