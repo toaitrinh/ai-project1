@@ -12,26 +12,17 @@ def main():
     with open(sys.argv[1]) as file:
         data = json.load(file)
 
-    print(data['colour'])
     board = add_hexes(data)
-    
     exit = exit_list(data, board)
-
-    assign_cost(board, exit)
-
-    for (k, v) in board.items():
-        print(str(k)+ " " + str(v.cost))
+    assign_cost(board, exit_list(data, board))
 
     temp_dict = {}
     for i in board.keys():
         temp_dict[i] = board[i].cost
 
     print_board(temp_dict) 
-
-    search_one(board, data['pieces'][0], exit) 
-    
-    # TODO: Search for and output winning sequence of moves
-    # ...
+    for piece in data['pieces']:
+        search_one(board, piece, exit) 
 
 class Piece:
     def __init__(self, colour, coordinates):
@@ -57,7 +48,6 @@ def add_hexes(data):
     board = {}
     for i in range(-3,1):
         for j in range(-3-i, 4):
-
             board[(i,j)] = Hex(1000, [], 'white', (i,j))
     for i in range(1,4):
         for j in range(-3,4-i):
@@ -73,9 +63,9 @@ def add_hexes(data):
             for j in range(-1,2):
                 new_coord = (k[0]+i,k[1]+j)
                 if i != j and new_coord in board:
-                    if board[new_coord].colour != 'black':
+                    if board[new_coord].colour == 'white':
                         v.neighbours.append(board[new_coord])
-                    elif (new_coord[0] + i, new_coord[1] + j) in board and board[(new_coord[0] + i, new_coord[1] + j)].colour != 'black':
+                    elif (new_coord[0] + i, new_coord[1] + j) in board and board[(new_coord[0] + i, new_coord[1] + j)].colour == 'white':
                         v.neighbours.append(board[(new_coord[0] + i, new_coord[1] + j)])
     return board
 
@@ -108,18 +98,20 @@ def assign_cost(board, queue):
                 i.cost = curr.cost + 1
                 queue.append(i.coordinates)
 
+def single_move(board, piece, exit):
+
+
 def search_one(board, piece, exit):
     coordinate = tuple(piece)
     colour = board[coordinate].colour
     while coordinate not in exit:
-        neighbours = board[coordinate].neighbours
-        neighbours2 = [(n.cost, n.coordinates) for n in neighbours]
-        neighbours2 = sorted(neighbours2)
+        neighbours2 = sorted([(n.cost, n.coordinates) for n in board[coordinate].neighbours])
         mincost = neighbours2[0][0]
         neighbours3 = [neighbours2.pop(0)[1]]
         while neighbours2 and neighbours2[0][0] == mincost:
             neighbours3.append(neighbours2.pop(0)[1])
         
+        # direction of travel -- along paths
         if coordinate[1] <= 0 and (coordinate[0] + 1, coordinate[1]) in neighbours3:
             next_coordinate = (coordinate[0] + 1, coordinate[1])
         elif (coordinate[0] + coordinate[1] >= 0) and (coordinate[0]+1, coordinate[1]+1) in neighbours3:
@@ -127,9 +119,22 @@ def search_one(board, piece, exit):
         else:
             next_coordinate = neighbours3[0]
 
-
-        print(f"MOVE from {coordinate} to {next_coordinate}")
+        # printing moves
+        if next_coordinate[0] == coordinate[0] + 2 or next_coordinate[1] == coordinate[1] + 2:
+            print(f"JUMP from {coordinate} to {next_coordinate}.")
+        else:
+            print(f"MOVE from {coordinate} to {next_coordinate}.")
         coordinate = next_coordinate
+
+    print(f"EXIT from {coordinate}.")
+
+
+def search_two(board, pieces, exit):
+    pieces_sorted = sorted([(n.cost, n.coordinates) for n in pieces])
+    furthest = tuple(pieces_sorted[-1][1])
+    second_furthest_cost = pieces_sorted[-2][0]
+    while board[furthest].cost >= second_furthest_cost:
+        pass
 
 
 def print_board(board_dict, message="", debug=True, **kwargs):
