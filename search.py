@@ -12,19 +12,11 @@ def main():
     with open(sys.argv[1]) as file:
         data = json.load(file)
 
-    exit = exit_list(data)
+    board = {}
+    assign_piece_cost(board, data)
 
-    piece_board = {}
-    assign_piece_cost(piece_board, data)
-
-    temp_dict = {}
-    for i in piece_board[tuple(data['pieces'][0])].keys():
-        temp_dict[i] = piece_board[tuple(data['pieces'][0])][i].cost
-
-    print_board(temp_dict)
-
-    for piece in data['pieces']:
-        search_one(piece_board[tuple(piece)], tuple(piece), exit)
+    for piece in data['pieces'][:]:
+        search_one(board, tuple(piece), data)
 
 class Piece:
     def __init__(self, colour, coordinates):
@@ -46,8 +38,7 @@ class Hex:
             printlist.append(n.coordinates)
         print(printlist)
 
-def add_hexes(data, piece):
-    board = {}
+def add_hexes(board, data):
     for i in range(-3,1):
         for j in range(-3-i, 4):
             board[(i,j)] = Hex(1000, [], 'white', (i,j))
@@ -55,7 +46,9 @@ def add_hexes(data, piece):
         for j in range(-3,4-i):
             board[(i,j)] = Hex(1000, [], 'white', (i,j))
 
-    board[piece].colour = data['colour']
+    for block in data['pieces']:
+        board[tuple(block)].colour = data['colour']
+
     for block in data['blocks']:
         board[tuple(block)].colour = 'black'
 
@@ -68,20 +61,24 @@ def add_hexes(data, piece):
                         v.neighbours.append(board[new_coord])
                     elif (new_coord[0] + i, new_coord[1] + j) in board and board[(new_coord[0] + i, new_coord[1] + j)].colour == 'white':
                         v.neighbours.append(board[(new_coord[0] + i, new_coord[1] + j)])
-    return board
 
-def exit_list(data):
-    lst = []
+def exit_list(board, data):
     if data['colour'] == 'red':
-        exit = [(3,-3), (3,-2), (3,-1), (3,0)]
+        lst = [(3,-3), (3,-2), (3,-1), (3,0)]
+        for i in lst:
+            board[i].cost = 1
+        return [(3,-3), (3,-2), (3,-1), (3,0)]
 
     elif data['colour'] == 'blue':
-        exit = [(0,-3), (-1,-2), (-2,-1), (-3,0)]
-
+        lst = [(0,-3), (-1,-2), (-2,-1), (-3,0)]
+        for i in lst:
+            board[i].cost = 1
+        return lst
     else:
-        exit = [(-3,3), (-2,3), (-1,3), (0,3)]
-
-    return exit
+        lst = [(-3,3), (-2,3), (-1,3), (0,3)]
+        for i in lst:
+            board[i].cost = 1
+        return lst
 
 def assign_cost(board, queue):
     while queue != []:
@@ -94,16 +91,15 @@ def assign_cost(board, queue):
 def single_move(board, piece, exit):
     return
 
-def assign_piece_cost(piece_board, data):
-    for i in data['pieces']:
-        piece_board[tuple(i)] = add_hexes(data, i)
-        piece_board[tuple(i)][tuple(i)].cost = 0
-        assign_cost(piece_board[tuple(i)], [tuple(i)])
+def assign_piece_cost(board, data):
+    add_hexes(board, data)
+    exit = exit_list(board, data)
+    assign_cost(board, exit)
 
-def search_one(board, piece, exit):
+def search_one(board, piece, data):
     coordinate = piece
     colour = board[coordinate].colour
-    while coordinate not in exit:
+    while board[coordinate].cost != 1:
         neighbours2 = sorted([(n.cost, n.coordinates) for n in board[coordinate].neighbours])
         mincost = neighbours2[0][0]
         neighbours3 = [neighbours2.pop(0)[1]]
@@ -127,10 +123,27 @@ def search_one(board, piece, exit):
             print(f"JUMP from {coordinate} to {next_coordinate}.")
         else:
             print(f"MOVE from {coordinate} to {next_coordinate}.")
+
+        data['pieces'].remove(list(coordinate))
         coordinate = next_coordinate
+        data['pieces'].append(list(coordinate))
+        assign_piece_cost(board, data)
+
+        temp_dict = {}
+        for i in board.keys():
+            temp_dict[i] = board[i].cost
+
+        print_board(temp_dict)
+
 
     print(f"EXIT from {coordinate}.")
+    data['pieces'].remove(list(coordinate))
+    assign_piece_cost( board, data)
+    temp_dict = {}
+    for i in board.keys():
+        temp_dict[i] = board[i].cost
 
+    print_board(temp_dict)
 
 def search_two(board, pieces, exit):
     pieces_sorted = sorted([(n.cost, n.coordinates) for n in pieces])
