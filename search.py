@@ -13,10 +13,13 @@ def main():
         data = json.load(file)
 
     board = {}
-    assign_piece_cost(board, data)
+    exit = assign_piece_cost(board, data)
 
     for piece in data['pieces'][:]:
-        search_one(board, tuple(piece), data)
+
+        search_one(board, tuple(piece), data, exit)
+
+
 
 class Piece:
     def __init__(self, colour, coordinates):
@@ -64,21 +67,23 @@ def add_hexes(board, data):
 
 def exit_list(board, data):
     if data['colour'] == 'red':
-        lst = [(3,-3), (3,-2), (3,-1), (3,0)]
-        for i in lst:
-            board[i].cost = 1
-        return [(3,-3), (3,-2), (3,-1), (3,0)]
+        exit = [(3,-3), (3,-2), (3,-1), (3,0)]
+        for i in exit:
+            if board[i].colour == 'white':
+                board[i].cost = 1
 
     elif data['colour'] == 'blue':
-        lst = [(0,-3), (-1,-2), (-2,-1), (-3,0)]
-        for i in lst:
-            board[i].cost = 1
-        return lst
+        exit = [(0,-3), (-1,-2), (-2,-1), (-3,0)]
+        for i in exit:
+            if board[i].colour == 'white':
+                board[i].cost = 1
+
     else:
-        lst = [(-3,3), (-2,3), (-1,3), (0,3)]
-        for i in lst:
-            board[i].cost = 1
-        return lst
+        exit = [(-3,3), (-2,3), (-1,3), (0,3)]
+        for i in exit:
+            if board[i].colour == 'white':
+                board[i].cost = 1
+    return exit
 
 def assign_cost(board, queue):
     while queue != []:
@@ -94,12 +99,15 @@ def single_move(board, piece, exit):
 def assign_piece_cost(board, data):
     add_hexes(board, data)
     exit = exit_list(board, data)
+    exit_copy = exit[:]
     assign_cost(board, exit)
+    return exit_copy
 
-def search_one(board, piece, data):
+def search_one(board, piece, data, exit):
     coordinate = piece
     colour = board[coordinate].colour
-    while board[coordinate].cost != 1:
+    while coordinate not in exit:
+
         neighbours2 = sorted([(n.cost, n.coordinates) for n in board[coordinate].neighbours])
         mincost = neighbours2[0][0]
         neighbours3 = [neighbours2.pop(0)[1]]
@@ -117,13 +125,11 @@ def search_one(board, piece, data):
             next_coordinate = (coordinate[0]+1, coordinate[1]+1)
         else:
             next_coordinate = neighbours3[0]
-
         # printing moves
         if next_coordinate[0] == coordinate[0] + 2 or next_coordinate[1] == coordinate[1] + 2:
             print(f"JUMP from {coordinate} to {next_coordinate}.")
         else:
             print(f"MOVE from {coordinate} to {next_coordinate}.")
-
         data['pieces'].remove(list(coordinate))
         coordinate = next_coordinate
         data['pieces'].append(list(coordinate))
@@ -135,15 +141,17 @@ def search_one(board, piece, data):
 
         print_board(temp_dict)
 
-
     print(f"EXIT from {coordinate}.")
     data['pieces'].remove(list(coordinate))
-    assign_piece_cost( board, data)
+    exit = assign_piece_cost(board, data)
+
     temp_dict = {}
     for i in board.keys():
         temp_dict[i] = board[i].cost
 
     print_board(temp_dict)
+    return
+
 
 def search_two(board, pieces, exit):
     pieces_sorted = sorted([(n.cost, n.coordinates) for n in pieces])
