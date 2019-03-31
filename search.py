@@ -12,17 +12,19 @@ def main():
     with open(sys.argv[1]) as file:
         data = json.load(file)
 
-    board = add_hexes(data)
-    exit = exit_list(data, board)
-    assign_cost(board, exit_list(data, board))
+    exit = exit_list(data)
+
+    piece_board = {}
+    assign_piece_cost(piece_board, data)
 
     temp_dict = {}
-    for i in board.keys():
-        temp_dict[i] = board[i].cost
+    for i in piece_board[tuple(data['pieces'][0])].keys():
+        temp_dict[i] = piece_board[tuple(data['pieces'][0])][i].cost
 
     print_board(temp_dict)
+
     for piece in data['pieces']:
-        search_one(board, piece, exit)
+        search_one(piece_board[tuple(piece)], tuple(piece), exit)
 
 class Piece:
     def __init__(self, colour, coordinates):
@@ -44,7 +46,7 @@ class Hex:
             printlist.append(n.coordinates)
         print(printlist)
 
-def add_hexes(data):
+def add_hexes(data, piece):
     board = {}
     for i in range(-3,1):
         for j in range(-3-i, 4):
@@ -53,8 +55,7 @@ def add_hexes(data):
         for j in range(-3,4-i):
             board[(i,j)] = Hex(1000, [], 'white', (i,j))
 
-    for piece in data['pieces']:
-        board[tuple(piece)].colour = data['colour']
+    board[piece].colour = data['colour']
     for block in data['blocks']:
         board[tuple(block)].colour = 'black'
 
@@ -69,26 +70,18 @@ def add_hexes(data):
                         v.neighbours.append(board[(new_coord[0] + i, new_coord[1] + j)])
     return board
 
-def exit_list(data, board):
+def exit_list(data):
     lst = []
-    print(data['colour'])
     if data['colour'] == 'red':
-        for i in [(3,-3), (3,-2), (3,-1), (3,0)]:
-            if board[i].colour != 'black':
-                board[i].cost = 1
-                lst.append(i)
+        exit = [(3,-3), (3,-2), (3,-1), (3,0)]
 
     elif data['colour'] == 'blue':
-        for i in [(0,-3), (-1,-2), (-2,-1), (-3,0)]:
-            if board[i].colour != 'black':
-                board[i].cost = 1
-                lst.append(i)
+        exit = [(0,-3), (-1,-2), (-2,-1), (-3,0)]
+
     else:
-        for i in [(-3,3), (-2,3), (-1,3), (0,3)]:
-            if board[i].colour != 'black':
-                board[i].cost = 1
-                lst.append(i)
-    return lst
+        exit = [(-3,3), (-2,3), (-1,3), (0,3)]
+
+    return exit
 
 def assign_cost(board, queue):
     while queue != []:
@@ -101,9 +94,14 @@ def assign_cost(board, queue):
 def single_move(board, piece, exit):
     return
 
+def assign_piece_cost(piece_board, data):
+    for i in data['pieces']:
+        piece_board[tuple(i)] = add_hexes(data, i)
+        piece_board[tuple(i)][tuple(i)].cost = 0
+        assign_cost(piece_board[tuple(i)], [tuple(i)])
 
 def search_one(board, piece, exit):
-    coordinate = tuple(piece)
+    coordinate = piece
     colour = board[coordinate].colour
     while coordinate not in exit:
         neighbours2 = sorted([(n.cost, n.coordinates) for n in board[coordinate].neighbours])
