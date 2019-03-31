@@ -1,5 +1,5 @@
 {
 "colour": "red",
 "pieces": [[-2,1]],
-"blocks": []
+"blocks": [[-1,0], [1,-1]]
 }
