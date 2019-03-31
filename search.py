@@ -115,7 +115,11 @@ def search_one(board, piece, exit):
         # direction of travel -- along paths
         if coordinate[1] <= 0 and (coordinate[0] + 1, coordinate[1]) in neighbours3:
             next_coordinate = (coordinate[0] + 1, coordinate[1])
+        elif coordinate[1] <= 0 and (coordinate[0] + 2, coordinate[1]) in neighbours3:
+            next_coordinate = (coordinate[0] + 2, coordinate[1])
         elif (coordinate[0] + coordinate[1] >= 0) and (coordinate[0]+1, coordinate[1]+1) in neighbours3:
+            next_coordinate = (coordinate[0]+1, coordinate[1]+1)
+        elif (coordinate[0] + coordinate[1] >= 0) and (coordinate[0]+2, coordinate[1]+2) in neighbours3:
             next_coordinate = (coordinate[0]+1, coordinate[1]+1)
         else:
             next_coordinate = neighbours3[0]
