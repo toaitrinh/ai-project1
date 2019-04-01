@@ -15,9 +15,7 @@ def main():
     board = {}
     exit = assign_piece_cost(board, data)
 
-    for piece in data['pieces'][:]:
-
-        search_one(board, tuple(piece), data, exit)
+    search_two(board, data, exit)
 
 
 
@@ -115,16 +113,8 @@ def search_one(board, piece, data, exit):
             neighbours3.append(neighbours2.pop(0)[1])
 
         # direction of travel -- along paths
-        if coordinate[1] <= 0 and (coordinate[0] + 1, coordinate[1]) in neighbours3:
-            next_coordinate = (coordinate[0] + 1, coordinate[1])
-        elif coordinate[1] <= 0 and (coordinate[0] + 2, coordinate[1]) in neighbours3:
-            next_coordinate = (coordinate[0] + 2, coordinate[1])
-        elif (coordinate[0] + coordinate[1] >= 0) and (coordinate[0]+1, coordinate[1]+1) in neighbours3:
-            next_coordinate = (coordinate[0]+1, coordinate[1]+1)
-        elif (coordinate[0] + coordinate[1] >= 0) and (coordinate[0]+2, coordinate[1]+2) in neighbours3:
-            next_coordinate = (coordinate[0]+1, coordinate[1]+1)
-        else:
-            next_coordinate = neighbours3[0]
+        next_coordinate = direction(coordinate, neighbours3, colour)
+
         # printing moves
         if next_coordinate[0] == coordinate[0] + 2 or next_coordinate[1] == coordinate[1] + 2:
             print(f"JUMP from {coordinate} to {next_coordinate}.")
@@ -152,8 +142,44 @@ def search_one(board, piece, data, exit):
     print_board(temp_dict)
     return
 
+def direction(coordinate, neighbours, colour):
+    if colour == 'red':
+        if coordinate[1] <= 0 and (coordinate[0] + 1, coordinate[1]) in neighbours:
+            next_coordinate = (coordinate[0] + 1, coordinate[1])
+        elif coordinate[1] <= 0 and (coordinate[0] + 2, coordinate[1]) in neighbours:
+            next_coordinate = (coordinate[0] + 2, coordinate[1])
+        elif (coordinate[0] + coordinate[1] >= 0) and (coordinate[0]+1, coordinate[1]+1) in neighbours:
+            next_coordinate = (coordinate[0]+1, coordinate[1]+1)
+        elif (coordinate[0] + coordinate[1] >= 0) and (coordinate[0]+2, coordinate[1]+2) in neighbours:
+            next_coordinate = (coordinate[0]+1, coordinate[1]+1)
+        else:
+            next_coordinate = neighbours[0]
+    elif colour == 'blue':
+        if coordinate[1] <= 0 and (coordinate[0] - 1, coordinate[1]) in neighbours:
+            next_coordinate = (coordinate[0] - 1, coordinate[1])
+        elif coordinate[1] <= 0 and (coordinate[0] - 2, coordinate[1]) in neighbours:
+            next_coordinate = (coordinate[0] - 2, coordinate[1])
+        elif coordinate[0] <= 0 and (coordinate[0], coordinate[1] - 1) in neighbours:
+            next_coordinate = (coordinate[0], coordinate[1] - 1)
+        elif coordinate[0] <= 0 and (coordinate[0], coordinate[1] - 2) in neighbours:
+            next_coordinate = (coordinate[0], coordinate[1] - 2)
+        else:
+            next_coordinate = neighbours[0]
+    else:
+        if coordinate[0] <= 0 and (coordinate[0], coordinate[1] + 1) in neighbours:
+            next_coordinate = (coordinate[0], coordinate[1] + 1)
+        elif coordinate[0] <= 0 and (coordinate[0], coordinate[1] + 2) in neighbours:
+            next_coordinate = (coordinate[0], coordinate[1] + 2)
+        elif (coordinate[0] + coordinate[1] >= 0) and (coordinate[0]-1, coordinate[1]-1) in neighbours:
+            next_coordinate = (coordinate[0]-1, coordinate[1]-1)
+        elif (coordinate[0] + coordinate[1] >= 0) and (coordinate[0]-2, coordinate[1]-2) in neighbours:
+            next_coordinate = (coordinate[0]-1, coordinate[1]-1)
+        else:
+            next_coordinate = neighbours[0]
+    return next_coordinate
 
-def search_two(board, pieces, exit):
+def search_two(board, data, exit):
+    pieces = data['pieces']
     pieces_sorted = sorted([(n.cost, n.coordinates) for n in pieces])
     furthest = tuple(pieces_sorted[-1][1])
     second_furthest_cost = pieces_sorted[-2][0]
