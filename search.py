@@ -104,6 +104,11 @@ def single_move(board, coordinate, data, exit):
     if coordinate in exit:
         print(f"EXIT from {coordinate}.")
         assign_piece_cost(board, data)
+        temp_dict = {}
+        for i in board.keys():
+            temp_dict[i] = board[i].cost
+
+        print_board(temp_dict)
     else:
         next_coordinate = total(board, data, neighbours, exit)
         if next_coordinate[0] == coordinate[0] + 2 or next_coordinate[1] == coordinate[1] + 2:
@@ -113,6 +118,11 @@ def single_move(board, coordinate, data, exit):
         coordinate = next_coordinate
         data['pieces'].append(list(coordinate))
         assign_piece_cost(board, data)
+        temp_dict = {}
+        for i in board.keys():
+            temp_dict[i] = board[i].cost
+
+        print_board(temp_dict)
     return
 
 def total(board, data, neighbours, exit):
