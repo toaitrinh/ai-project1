@@ -124,7 +124,7 @@ def assign_piece_cost(board, data):
     return exit_copy
 
 def single_move(board, coordinate, data, exit):
-    neighbours = sorted([(n.cost[0], n.coordinates) for n in board[coordinate].neighbours])
+    neighbours = [n.coordinates for n in board[coordinate].neighbours]
     data['pieces'].remove(list(coordinate))
     board[coordinate].colour = 'white'
     if coordinate in exit:
@@ -132,11 +132,11 @@ def single_move(board, coordinate, data, exit):
         assign_piece_cost(board, data)
         temp_dict = {}
         for i in board.keys():
-            temp_dict[i] = board[i].cost
+            temp_dict[i] = board[i].cost[0]
 
         print_board(temp_dict)
     else:
-        next_coordinate = total(board, data, neighbours, exit)
+        next_coordinate = total(board, coordinate, neighbours, exit)
         if next_coordinate[0] == coordinate[0] + 2 or next_coordinate[1] == coordinate[1] + 2:
             print(f"JUMP from {coordinate} to {next_coordinate}.")
         else:
@@ -146,24 +146,17 @@ def single_move(board, coordinate, data, exit):
         assign_piece_cost(board, data)
         temp_dict = {}
         for i in board.keys():
-            temp_dict[i] = board[i].cost
+            temp_dict[i] = board[i].cost[0]
 
         print_board(temp_dict)
     return
 
-def total(board, data, neighbours, exit):
-    for piece in data['pieces']:
-        add_hexes(board, data)
-        board[tuple(piece)].cost[0] = 1
-        assign_cost(board, [tuple(piece)], data['pieces'])
-        for i in range(len(neighbours)):
-            neighbours[i] = (neighbours[i][0] + board[neighbours[i][1]].cost[0], neighbours[i][1])
-    mincost = neighbours[0][0]
-    neighbours2 = [neighbours.pop(0)[1]]
-    while neighbours and neighbours[0][0] == mincost:
-        neighbours2.append(neighbours.pop(0)[1])
-    neighbours3 = [(dist_to_exit(board, i, exit), i) for i in neighbours2]
-    return min(neighbours3)[1]
+def total(board, coordinate, neighbours, exit):
+    neighbours2 = []
+    for i in neighbours:
+        if sum(board[i].cost) <= sum(board[coordinate].cost):
+            neighbours2.append((board[i].cost, i))
+    return min(neighbours2)[1]
 
 def dist_to_exit(board, piece, exit):
     dist = 0
@@ -182,13 +175,11 @@ def multi_search(board, data, exit):
             if coordinate in exit:
                 ex = True
                 break
-            piece_list.append((dist_to_exit(board, tuple(piece), exit), tuple(piece)))
+            piece_list.append((board[coordinate].cost, tuple(piece)))
         if not ex:
             piece_list = sorted(piece_list)
             coordinate = piece_list[-1][1]
         single_move(board, coordinate, data, exit)
-
-#vector?
 
 def print_board(board_dict, message="", debug=True, **kwargs):
     """
