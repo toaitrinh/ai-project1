@@ -183,14 +183,20 @@ def choose_piece(board, data, piece_list):
         neighbours = [n.coordinates for n in board[coordinate].neighbours]
         data['pieces'].remove(list(coordinate))
         next_coordinate = total(board, coordinate, neighbours, exit)
-        original = sum([board[tuple(i)].cost[0] for i in data['pieces'] if tuple(i) != coordinate])
+        original = sum([sum(board[tuple(i)].cost) for i in data['pieces'] if tuple(i) != coordinate])
         data['pieces'].append(list(next_coordinate))
         assign_piece_cost(board, data)
-        new  = sum([board[tuple(i)].cost[0] for i in data['pieces'] if tuple(i) != next_coordinate])
         data['pieces'].remove(list(next_coordinate))
+        new  = sum([sum(board[tuple(i)].cost) for i in data['pieces'] if tuple(i) != next_coordinate])
         data['pieces'].append(list(coordinate))
         assign_piece_cost(board, data)
         lst.append((original-new, coordinate))
+    # while True:
+    #     if lst[0] == max(lst)[0]:
+    #         break
+    #     else:
+    #         lst.pop(0)
+    # ls2 = [max]
     return max(lst)[1]
 
 def print_board(board_dict, message="", debug=True, **kwargs):
