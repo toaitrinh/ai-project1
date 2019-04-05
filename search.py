@@ -7,6 +7,7 @@ Authors:
 
 import sys
 import json
+import pdb
 
 class Piece:
     def __init__(self, colour, coordinates):
@@ -96,7 +97,7 @@ def assign_cost(board, queue, pieces):
     while queue != []:
         curr = board[queue.pop(0)]
         for i in curr.neighbours:
-            if i.cost[0] > (curr.cost[0] + 1):
+            if curr.colour == 'white' and i.cost[0] > (curr.cost[0] + 1):
                 i.cost[0] = curr.cost[0] + 1
                 queue.append(i.coordinates)
 
@@ -141,7 +142,11 @@ def single_move(board, coordinate, data, exit):
         coordinate = next_coordinate
         data['pieces'].append(list(coordinate))
         assign_piece_cost(board, data)
+    temp_dict = {}
+    for i in board.keys():
+        temp_dict[i] = board[i].colour[0]
 
+    print_board(temp_dict)
     return
 
 def total(board, coordinate, neighbours, exit):
@@ -171,32 +176,45 @@ def multi_search(board, data, exit):
             piece_list.append(coordinate)
         if not ex:
             if len(piece_list) > 1:
-                coordinate = choose_piece(board, data, piece_list)
+                coordinate = choose_piece(board, data, piece_list, exit)
             else:
                 coordinate = piece_list[0]
         single_move(board, coordinate, data, exit)
 
-def choose_piece(board, data, piece_list):
+def choose_piece(board, data, piece_list, exit):
     lst = []
     for piece in piece_list:
         coordinate = piece
         neighbours = [n.coordinates for n in board[coordinate].neighbours]
         data['pieces'].remove(list(coordinate))
         next_coordinate = total(board, coordinate, neighbours, exit)
-        original = sum([sum(board[tuple(i)].cost) for i in data['pieces'] if tuple(i) != coordinate])
+        # print(data['pieces'])
+        # print([board[tuple(i)].cost for i in data['pieces'] if tuple(i) != coordinate])
+        original = sum([board[tuple(i)].cost[0] for i in data['pieces'] if tuple(i) != coordinate])
         data['pieces'].append(list(next_coordinate))
         assign_piece_cost(board, data)
+        # print(data['pieces'])
+        # if (data['pieces'] == [[-2,1],[-1,0],[1,-1]]):
+        #     temp_dict = {}
+        #     for i in board.keys():
+        #         temp_dict[i] = board[i].colour
+        #
+        #     print_board(temp_dict)
+
         data['pieces'].remove(list(next_coordinate))
-        new  = sum([sum(board[tuple(i)].cost) for i in data['pieces'] if tuple(i) != next_coordinate])
+        # print([board[tuple(i)].cost for i in data['pieces'] if tuple(i) != next_coordinate])
+        new  = sum([board[tuple(i)].cost[0] for i in data['pieces'] if tuple(i) != next_coordinate])
         data['pieces'].append(list(coordinate))
         assign_piece_cost(board, data)
         lst.append((original-new, coordinate))
-    # while True:
-    #     if lst[0] == max(lst)[0]:
-    #         break
-    #     else:
-    #         lst.pop(0)
-    # ls2 = [max]
+    print(lst)
+    lst = sorted(lst)
+    while True:
+        if lst[0][0] == max(lst)[0]:
+            break
+        else:
+            lst.pop(0)
+    lst = [(dist_to_exit(board, i[1], exit), i[1]) for i in lst]
     return max(lst)[1]
 
 def print_board(board_dict, message="", debug=True, **kwargs):
