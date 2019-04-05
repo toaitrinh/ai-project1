@@ -134,7 +134,7 @@ def single_move(board, coordinate, data, exit):
 
     else:
         next_coordinate = total(board, coordinate, neighbours, exit)
-        if next_coordinate[0] == coordinate[0] + 2 or next_coordinate[1] == coordinate[1] + 2:
+        if abs(next_coordinate[0] - coordinate[0]) == 2 or abs(next_coordinate[1] -coordinate[1]) == 2:
             print(f"JUMP from {coordinate} to {next_coordinate}.")
         else:
             print(f"MOVE from {coordinate} to {next_coordinate}.")
