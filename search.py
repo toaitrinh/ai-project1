@@ -175,11 +175,36 @@ def multi_search(board, data, exit):
             if coordinate in exit:
                 ex = True
                 break
-            piece_list.append((board[coordinate].cost, tuple(piece)))
+            piece_list.append((board[coordinate].cost[0], tuple(piece)))
         if not ex:
             piece_list = sorted(piece_list)
-            coordinate = piece_list[-1][1]
+            while True:
+                if piece_list[0][0] == piece_list[-1][0]:
+                    break
+                else:
+                    piece_list.pop(0)
+            if len(piece_list) > 1:
+                coordinate = choose_piece(board, data, piece_list)
+            else:
+                coordinate = piece_list[0][1]
         single_move(board, coordinate, data, exit)
+
+def choose_piece(board, data, piece_list):
+    for piece in piece_list:
+        coordinate = piece[1]
+        neighbours = [n.coordinates for n in board[coordinate].neighbours]
+        data['pieces'].remove(list(coordinate))
+        next_coordinate = total(board, coordinate, neighbours, exit)
+        original = sum([board[tuple(i)].cost[0] for i in data['pieces'] if tuple(i) != coordinate])
+        data['pieces'].append(list(next_coordinate))
+        assign_piece_cost(board, data)
+        new  = sum([board[tuple(i)].cost[0] for i in data['pieces'] if tuple(i) != next_coordinate])
+        data['pieces'].remove(list(next_coordinate))
+        data['pieces'].append(list(coordinate))
+        assign_piece_cost(board, data)
+        if new < original:
+            return coordinate
+    return piece_list[0][1]
 
 def print_board(board_dict, message="", debug=True, **kwargs):
     """
