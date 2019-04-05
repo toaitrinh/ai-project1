@@ -142,11 +142,6 @@ def single_move(board, coordinate, data, exit):
         coordinate = next_coordinate
         data['pieces'].append(list(coordinate))
         assign_piece_cost(board, data)
-    temp_dict = {}
-    for i in board.keys():
-        temp_dict[i] = board[i].colour[0]
-
-    print_board(temp_dict)
     return
 
 def total(board, coordinate, neighbours, exit):
@@ -188,26 +183,14 @@ def choose_piece(board, data, piece_list, exit):
         neighbours = [n.coordinates for n in board[coordinate].neighbours]
         data['pieces'].remove(list(coordinate))
         next_coordinate = total(board, coordinate, neighbours, exit)
-        # print(data['pieces'])
-        # print([board[tuple(i)].cost for i in data['pieces'] if tuple(i) != coordinate])
         original = sum([board[tuple(i)].cost[0] for i in data['pieces'] if tuple(i) != coordinate])
         data['pieces'].append(list(next_coordinate))
         assign_piece_cost(board, data)
-        # print(data['pieces'])
-        # if (data['pieces'] == [[-2,1],[-1,0],[1,-1]]):
-        #     temp_dict = {}
-        #     for i in board.keys():
-        #         temp_dict[i] = board[i].colour
-        #
-        #     print_board(temp_dict)
-
         data['pieces'].remove(list(next_coordinate))
-        # print([board[tuple(i)].cost for i in data['pieces'] if tuple(i) != next_coordinate])
         new  = sum([board[tuple(i)].cost[0] for i in data['pieces'] if tuple(i) != next_coordinate])
         data['pieces'].append(list(coordinate))
         assign_piece_cost(board, data)
         lst.append((original-new, coordinate))
-    print(lst)
     lst = sorted(lst)
     while True:
         if lst[0][0] == max(lst)[0]:
