@@ -37,7 +37,7 @@ def main():
 
     pieces = [tuple(piece) for piece in data['pieces']]
     lst = []
-    for i in multi_search(board, data, exit, lst):
+    for i in multi_search(board, data, exit, lst, 0):
         print(i)
 
 
@@ -164,7 +164,7 @@ def dist_to_exit(board, piece, exit):
             (board[i].coordinates[1] - board[piece].coordinates[1])**2
     return dist
 
-def multi_search(board, data, exit, lst):
+def multi_search(board, data, exit, lst, k):
     colour = data['colour']
     while data['pieces']:
         piece_list = []
@@ -177,13 +177,13 @@ def multi_search(board, data, exit, lst):
             piece_list.append(coordinate)
         if not ex:
             if len(piece_list) > 1:
-                coordinate = choose_piece(board, data, piece_list, exit)
+                coordinate = choose_piece(board, data, piece_list, exit, k)
             else:
                 coordinate = piece_list[0]
         lst.append(single_move(board, coordinate, data, exit))
     return lst
 
-def choose_piece(board, data, piece_list, exit):
+def choose_piece(board, data, piece_list, exit, k):
     lst = []
     for piece in piece_list:
         coordinate = piece
@@ -195,18 +195,20 @@ def choose_piece(board, data, piece_list, exit):
     for i in lst:
         if i[0] == max(lst)[0]:
             lst2.append(i[1:])
-    if len(lst2) > 1:
-        lst3 = []
+    lst3 = []
+    if len(lst2) > 1 and k <  2:
         for i in lst2:
             pieces = data['pieces'][:]
             data['pieces'].remove(list(i[0]))
             data['pieces'].append(list(i[1]))
             assign_piece_cost(board, data)
-            lst3.append((len(multi_search(board, data, exit, [])), i))
+            lst3.append((len(multi_search(board, data, exit, [], k+1)), i))
             data['pieces'] = pieces
             assign_piece_cost(board, data)
-        return min(lst3)[1][0]
-    return lst2[0][0]
+    else:
+        for i in lst2:
+            lst3.append((0, i))
+    return min(lst3)[1][0]
 
 def print_board(board_dict, message="", debug=True, **kwargs):
     """
