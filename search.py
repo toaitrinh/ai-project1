@@ -90,9 +90,7 @@ def exit_list(board, data):
     return exit
 
 def assign_cost(board, queue, pieces):
-    new_pieces = []
-    for i in pieces:
-        new_pieces.append(tuple(i))
+    new_pieces = [tuple(i) for i in pieces]
     while queue != []:
         curr = board[queue.pop(0)]
         for i in curr.neighbours:
