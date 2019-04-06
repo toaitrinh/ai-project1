@@ -36,7 +36,10 @@ def main():
     exit = assign_piece_cost(board, data)
 
     pieces = [tuple(piece) for piece in data['pieces']]
-    multi_search(board, data, exit)
+    lst = []
+    for i in multi_search(board, data, exit, lst):
+        print(i)
+
 
 
 def add_hexes(board, data):
@@ -91,7 +94,9 @@ def exit_list(board, data):
     return exit
 
 def assign_cost(board, queue, pieces):
-    new_pieces = [tuple(i) for i in pieces]
+    new_pieces = []
+    for i in pieces:
+        new_pieces.append(tuple(i))
     while queue != []:
         curr = board[queue.pop(0)]
         for i in curr.neighbours:
@@ -128,25 +133,28 @@ def single_move(board, coordinate, data, exit):
     data['pieces'].remove(list(coordinate))
     board[coordinate].colour = 'white'
     if coordinate in exit:
-        print(f"EXIT from {coordinate}.")
+        str = f"EXIT from {coordinate}."
         assign_piece_cost(board, data)
-
     else:
         next_coordinate = total(board, coordinate, neighbours, exit)
         if abs(next_coordinate[0] - coordinate[0]) == 2 or abs(next_coordinate[1] -coordinate[1]) == 2:
-            print(f"JUMP from {coordinate} to {next_coordinate}.")
+            str = f"JUMP from {coordinate} to {next_coordinate}."
         else:
-            print(f"MOVE from {coordinate} to {next_coordinate}.")
+            str = f"MOVE from {coordinate} to {next_coordinate}."
         coordinate = next_coordinate
         data['pieces'].append(list(coordinate))
         assign_piece_cost(board, data)
-    return
+    # temp_dict = {}
+    # for i in board.keys():
+    #     temp_dict[i] = board[i].colour[0]
+    #
+    # print_board(temp_dict)
+    return str
 
 def total(board, coordinate, neighbours, exit):
     neighbours2 = []
     for i in neighbours:
-        if sum(board[i].cost) <= sum(board[coordinate].cost):
-            neighbours2.append((board[i].cost, i))
+        neighbours2.append((board[i].cost, i))
     return min(neighbours2)[1]
 
 def dist_to_exit(board, piece, exit):
@@ -156,7 +164,7 @@ def dist_to_exit(board, piece, exit):
             (board[i].coordinates[1] - board[piece].coordinates[1])**2
     return dist
 
-def multi_search(board, data, exit):
+def multi_search(board, data, exit, lst):
     colour = data['colour']
     while data['pieces']:
         piece_list = []
@@ -172,31 +180,33 @@ def multi_search(board, data, exit):
                 coordinate = choose_piece(board, data, piece_list, exit)
             else:
                 coordinate = piece_list[0]
-        single_move(board, coordinate, data, exit)
+        lst.append(single_move(board, coordinate, data, exit))
+    return lst
 
 def choose_piece(board, data, piece_list, exit):
     lst = []
     for piece in piece_list:
         coordinate = piece
         neighbours = [n.coordinates for n in board[coordinate].neighbours]
-        data['pieces'].remove(list(coordinate))
         next_coordinate = total(board, coordinate, neighbours, exit)
-        original = sum([board[tuple(i)].cost[0] for i in data['pieces'] if tuple(i) != coordinate])
-        data['pieces'].append(list(next_coordinate))
-        assign_piece_cost(board, data)
-        data['pieces'].remove(list(next_coordinate))
-        new  = sum([board[tuple(i)].cost[0] for i in data['pieces'] if tuple(i) != next_coordinate])
-        data['pieces'].append(list(coordinate))
-        assign_piece_cost(board, data)
-        lst.append((original-new, coordinate))
-    lst = sorted(lst)
-    while True:
-        if lst[0][0] == max(lst)[0]:
-            break
-        else:
-            lst.pop(0)
-    lst = [(dist_to_exit(board, i[1], exit), i[1]) for i in lst]
-    return max(lst)[1]
+        lst.append((board[coordinate].cost[0], coordinate, next_coordinate))
+
+    lst2 = []
+    for i in lst:
+        if i[0] == max(lst)[0]:
+            lst2.append(i[1:])
+    if len(lst2) > 1:
+        lst3 = []
+        for i in lst2:
+            pieces = data['pieces'][:]
+            data['pieces'].remove(list(i[0]))
+            data['pieces'].append(list(i[1]))
+            assign_piece_cost(board, data)
+            lst3.append((len(multi_search(board, data, exit, [])), i))
+            data['pieces'] = pieces
+            assign_piece_cost(board, data)
+        return min(lst3)[1][0]
+    return lst2[0][0]
 
 def print_board(board_dict, message="", debug=True, **kwargs):
     """
