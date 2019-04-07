@@ -99,6 +99,36 @@ class Piece:
                 if n.coordinates not in visited:
                     queue.put((n.coordinates, path + [curr]))
 
+    def make_move(self, board):
+        curr = self.coordinates
+        path = self.path
+        board.pieces.remove(self)
+        if curr in exit:
+            if debug == False:
+                print('exit from', curr)
+            all_blocks.remove(curr)    
+            return 0, path + [curr]
+        else:
+            next_coord = next_step(curr, board)
+            if next_coord in exit:
+                if debug == False:
+                    print('move from', curr, 'to', next_coord)
+                    dict_draw = {piece.coordinates: 'x' for piece in board.pieces}
+                    dict_draw[next_coord] = 'x'
+                    print_board(dict_draw)
+                    print('exit from', next_coord)
+                path += [next_coord]
+                return 0, path
+            else:
+                path += [curr]
+                new_piece = Piece(tuple(next_coord), self.path + [curr], self.colour)
+                board.pieces.append(new_piece)
+                # do we have to rebuild entire board again or just pieces/neighbours of moved ones
+                if debug == False:
+                    print('move from', curr, 'to', next_coord)
+                return 1, new_piece
+
+
 def next_step(current, board):
     hexes = board.hexes
     x,y = current
@@ -134,33 +164,9 @@ def main():
         dict_draw = {piece.coordinates: 'x' for piece in board.pieces}
         print_board(dict_draw)
         h, piece, path = furthest.get()
-        curr = piece.coordinates
-        board.pieces.remove(piece)
-        if curr in exit:
-            if debug == False:
-                print('exit from', curr)
-            paths.append(path + [curr])
-            all_blocks.remove(curr)
-        else:
-            next_coord = next_step(curr, board)
-            if next_coord in exit:
-                if debug == False:
-                    print('move from', curr, 'to', next_coord)
-                    dict_draw = {piece.coordinates: 'x' for piece in board.pieces}
-                    dict_draw[next_coord] = 'x'
-                    print_board(dict_draw)
-                    print('exit from', next_coord)
-                paths.append(path + [next_coord])
-            else:
-                paths.append(path + [curr])
-                new_piece = Piece(tuple(next_coord), piece.path + [curr], piece.colour)
-                board.pieces.append(new_piece)
-                all_blocks.remove(curr)
-                all_blocks.append(next_coord)
-                furthest.put2((board.hexes[next_coord].heuristic, new_piece, path + [curr]))
-                # do we have to rebuild entire board again or just pieces/neighbours of moved ones
-                if debug == False:
-                    print('move from', curr, 'to', next_coord)
+        a,b = piece.make_move(board)
+        if a == 1:
+            furthest.put2((board.hexes[b.coordinates].heuristic, b, b.path))
         board.create_board()
 
         
