@@ -9,33 +9,37 @@ import sys
 import json
 import pdb
 
-class Piece:
-    def __init__(self, colour, coordinates):
-        self.colour = colour
-        self.coordinates = coordinates
-
-
+# class for storing the board layout
 class Hex:
     def __init__(self, cost, neighbours, colour, coordinates):
+        # cost from moving from specific hex to exit, independently
         self.cost = cost
+
+        # list of neighbouring hexes, stored as hex objects
         self.neighbours = neighbours
+
+        # colour of hex, blocks stored as black, and empty hexes as white
         self.colour = colour
+
+        # coordinates of hex
         self.coordinates = coordinates
 
-    def new_print(self):
-        printlist = []
-        for n in self.neighbours:
-            printlist.append(n.coordinates)
-        print(printlist)
-
 def main():
+
+    # import the board specifications
     with open(sys.argv[1]) as file:
         data = json.load(file)
 
+    # initialise the board
     board = {}
     exit = assign_piece_cost(board, data)
+    temp_dict = {}
+    for i in board.keys():
+        temp_dict[i] = board[i].colour
 
-    pieces = [tuple(piece) for piece in data['pieces']]
+    print_board(temp_dict)
+
+    # search for exit within board
     multi_search(board, data, exit)
 
 
@@ -147,8 +151,7 @@ def single_move(board, coordinate, data, exit):
 def total(board, coordinate, neighbours, exit):
     neighbours2 = []
     for i in neighbours:
-        if sum(board[i].cost) <= sum(board[coordinate].cost):
-            neighbours2.append((board[i].cost, i))
+        neighbours2.append((board[i].cost, i))
     return min(neighbours2)[1]
 
 def dist_to_exit(board, piece, exit):
@@ -181,6 +184,8 @@ def choose_piece(board, data, piece_list, exit):
     for piece in piece_list:
         coordinate = piece
         neighbours = [n.coordinates for n in board[coordinate].neighbours]
+        if not neighbours:
+            continue
         data['pieces'].remove(list(coordinate))
         next_coordinate = total(board, coordinate, neighbours, exit)
         original = sum([board[tuple(i)].cost[0] for i in data['pieces'] if tuple(i) != coordinate])
