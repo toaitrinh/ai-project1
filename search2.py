@@ -202,7 +202,7 @@ def choose_piece(board, data, piece_list, exit, k):
             data['pieces'].remove(list(i[0]))
             data['pieces'].append(list(i[1]))
             assign_piece_cost(board, data)
-            lst3.append((len(multi_search(board, data, exit, [], k+1)), i))
+            lst3.append((len(multi_search(board, data, exit, [], 0)), i))
             data['pieces'] = pieces
             assign_piece_cost(board, data)
     else:
