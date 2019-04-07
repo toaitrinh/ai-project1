@@ -9,7 +9,7 @@ import sys
 import json
 import math
 
-debug = False
+debug = True
 exit = [(3,-3), (3,-2), (3,-1), (3,0)]
 
 class Board:
@@ -105,18 +105,22 @@ class Piece:
         board.pieces.remove(self)
         if curr in exit:
             if debug == False:
-                print('exit from', curr)
+                print(f"EXIT from {curr}.")
             all_blocks.remove(curr)    
             return 0, path + [curr]
         else:
             next_coord = next_step(curr, board)
             if next_coord in exit:
                 if debug == False:
-                    print('move from', curr, 'to', next_coord)
-                    dict_draw = {piece.coordinates: 'x' for piece in board.pieces}
-                    dict_draw[next_coord] = 'x'
+                    dict_draw = {piece.coordinates: 'o' for piece in board.pieces}
+                    dict_draw.update({block:'XXX' for block in board.blocks})
+                    dict_draw[next_coord] = 'o'
                     print_board(dict_draw)
-                    print('exit from', next_coord)
+                if abs(next_coord[0] - curr[0]) == 2 or abs(next_coord[1] - curr[1]) == 2:
+                    print(f"JUMP from {curr} to {next_coord}.")
+                else:
+                    print(f"MOVE from {curr} to {next_coord}.")
+                print(f"EXIT from {next_coord}.")    
                 path += [next_coord]
                 return 0, path
             else:
@@ -124,8 +128,10 @@ class Piece:
                 new_piece = Piece(tuple(next_coord), self.path + [curr], self.colour)
                 board.pieces.append(new_piece)
                 # do we have to rebuild entire board again or just pieces/neighbours of moved ones
-                if debug == False:
-                    print('move from', curr, 'to', next_coord)
+                if abs(next_coord[0] - curr[0]) == 2 or abs(next_coord[1] - curr[1]) == 2:
+                    print(f"JUMP from {curr} to {next_coord}.")
+                else:
+                    print(f"MOVE from {curr} to {next_coord}.")
                 return 1, new_piece
 
 
@@ -141,16 +147,15 @@ def next_step(current, board):
     else:
         return sorted(poss)[0]
 
-            
+def simulate():
+    pass            
 
 def main():
     with open(sys.argv[1]) as file:
         data = json.load(file)
 
     all_blocks = [tuple(b) for b in data['blocks']] + [tuple(b) for b in data['pieces']]
-
     pieces = [Piece(tuple(piece), [], data['colour']) for piece in data['pieces']]
-
     board = Board(pieces, [tuple(b) for b in data['blocks']])
     board.create_board()
 
@@ -158,11 +163,12 @@ def main():
     for piece in board.pieces:
         furthest.put2((board.hexes[piece.coordinates].heuristic, piece, []))
 
-
     paths = []
     while not furthest.empty():
-        dict_draw = {piece.coordinates: 'x' for piece in board.pieces}
-        print_board(dict_draw)
+        if debug == False:
+            dict_draw = {piece.coordinates: 'o' for piece in board.pieces}
+            dict_draw.update({block:'XXX' for block in board.blocks})
+            print_board(dict_draw)
         h, piece, path = furthest.get()
         a,b = piece.make_move(board)
         if a == 1:
