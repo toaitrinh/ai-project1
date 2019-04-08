@@ -112,7 +112,6 @@ class Piece:
         return path_board
 
 class PathNode:
-    next = []
     def __init__(self, board, cost, path, prior):
         self.board = board
         self.cost = cost
@@ -122,15 +121,16 @@ class PathNode:
     def __lt__(self, other):
         return self.cost < other.cost
 
-    def make_move(self, exit, furthest):
+    def make_move(self, exit, furthest, piece_dict):
         board = self.board
-        self.next = []
         for piece in board.pieces:
             piece_positions = piece.move_piece(board, exit)
             for i in piece_positions:
-                self.next.append(new_board(i[1], board.blocks, exit))
-                summ = sum([self.next[-1].hexes[piece.coordinates].heuristic for piece in self.next[-1].pieces])
-                furthest.put2((1 + summ, PathNode(self.next[-1], 1 + summ, self.path + i[0], self)))
+                if tuple(i[1]) in piece_dict:
+                    continue
+                piece_dict[tuple(i[1])] = new_board(i[1], board.blocks, exit)
+                summ = sum([piece_dict[tuple(i[1])].hexes[piece.coordinates].heuristic for piece in piece_dict[tuple(i[1])].pieces])
+                furthest.put2((1 + summ, PathNode(piece_dict[tuple(i[1])], 1 + summ, self.path + i[0], self)))
         return
 
 def new_board(pieces, blocks, exit):
@@ -164,9 +164,10 @@ def main():
     furthest = PriorityQueue()
     furthest.put2((0, root))
 
+    piece_dict = {}
     while not furthest.empty():
         total, node = furthest.get()
-        node.make_move(exit_list, furthest)
+        node.make_move(exit_list, furthest, piece_dict)
         if not board.pieces:
             break
 
