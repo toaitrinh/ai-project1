@@ -112,11 +112,10 @@ class Piece:
         return path_board
 
 class PathNode:
-    def __init__(self, board, cost, path, prior):
+    def __init__(self, board, cost, path):
         self.board = board
         self.cost = cost
         self.path = path
-        self.prior = prior
 
     def __lt__(self, other):
         return self.cost < other.cost
@@ -130,7 +129,7 @@ class PathNode:
                     continue
                 piece_dict[tuple(i[1])] = new_board(i[1], board.blocks, exit)
                 summ = sum([piece_dict[tuple(i[1])].hexes[piece.coordinates].heuristic for piece in piece_dict[tuple(i[1])].pieces])
-                furthest.put2((1 + summ, PathNode(piece_dict[tuple(i[1])], 1 + summ, self.path + i[0], self)))
+                furthest.put2((1 + summ, PathNode(piece_dict[tuple(i[1])], 1 + summ, self.path + i[0])))
         return
 
 def new_board(pieces, blocks, exit):
@@ -150,6 +149,7 @@ def simulate():
 def main():
     with open(sys.argv[1]) as file:
         data = json.load(file)
+    print(data)
 
     exit = Exit(data)
     exit_list = exit.exit_list()
@@ -159,7 +159,7 @@ def main():
     board = Board(pieces, [tuple(b) for b in data['blocks']])
     board.create_board(exit_list)
 
-    root = PathNode(board, sum([board.hexes[piece.coordinates].heuristic for piece in board.pieces]), [], None)
+    root = PathNode(board, sum([board.hexes[piece.coordinates].heuristic for piece in board.pieces]), [])
 
     furthest = PriorityQueue()
     furthest.put2((0, root))
@@ -174,23 +174,14 @@ def main():
     for i in node.path:
         print(i)
 
-    # while not furthest.empty():
-    #     if debug == False:
-    #         dict_draw = {piece.coordinates: 'o' for piece in board.pieces}
-    #         dict_draw.update({block:'XXX' for block in board.blocks})
-    #         print_board(dict_draw)
-    #     h, piece, path = furthest.get()
-    #     a,b = piece.make_move(board, exit_list)
-    #     if a == 1:
-    #         furthest.put2((board.hexes[b.coordinates].heuristic, b, b.path))
-    #     board.create_board(exit_list)
-
-
-    # TODO: Search for and output winning sequence of moves
-    # ...
 
 
 
+    temp_dict = {}
+    for k,v in board.hexes:
+        temp_dict[k] = 0
+
+    print_board(temp_dict)
 
 def print_board(board_dict, message="", debug=True, **kwargs):
     """
