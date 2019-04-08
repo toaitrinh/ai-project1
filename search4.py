@@ -80,80 +80,69 @@ class PriorityQueue:
         return self.elements.pop(0)
 
 class Piece:
-    # def get_exit(self):
-        # if self.colour == 'red':
-        #     exit = [(3,-3), (3,-2), (3,-1), (3,0)]
-        # elif self.colour == 'blue':
-        #     exit = [(0,-3), (-1,-2), (-2,-1), (-3,0)]
-        # else:
-        #     exit = [(-3,3), (-2,3), (-1,3), (0,3)]
-        # return exit
-
-    def __init__(self, coordinates, path, colour):
+    def __init__(self, coordinates, colour):
         self.coordinates = coordinates
-        self.path = path
         self.colour = colour
 
     def __lt__(self, other):
         return self.coordinates < other.coordinates
 
-    def make_move(self, board, exit):
+    def move_piece(self, board, exit):
         curr = self.coordinates
-        path = self.path
         board.pieces.remove(self)
-        if curr in exit:
-            if debug == False:
-                print(f"EXIT from {curr}.")
-            all_blocks.remove(curr)
-            return 0, path + [curr]
-        else:
-            next_coord = next_step(curr, board, exit)
-            if next_coord in exit:
-                if debug == False:
-                    dict_draw = {piece.coordinates: 'o' for piece in board.pieces}
-                    dict_draw.update({block:'XXX' for block in board.blocks})
-                    dict_draw[next_coord] = 'o'
-                    print_board(dict_draw)
-                if abs(next_coord[0] - curr[0]) == 2 or abs(next_coord[1] - curr[1]) == 2:
-                    print(f"JUMP from {curr} to {next_coord}.")
-                else:
-                    print(f"MOVE from {curr} to {next_coord}.")
-                print(f"EXIT from {next_coord}.")
-                path += [next_coord]
-                return 0, path
-            else:
-                path += [curr]
-                new_piece = Piece(tuple(next_coord), self.path + [curr], self.colour)
-                board.pieces.append(new_piece)
-                # do we have to rebuild entire board again or just pieces/neighbours of moved ones
-                if abs(next_coord[0] - curr[0]) == 2 or abs(next_coord[1] - curr[1]) == 2:
-                    print(f"JUMP from {curr} to {next_coord}.")
-                else:
-                    print(f"MOVE from {curr} to {next_coord}.")
-                return 1, new_piece
+        next_coord = next_step(curr, board, exit)
+        possible_boards = []
+        path_board = []
+        for new in next_coord:
+            if new in exit:
+                if abs(new[0] - curr[0]) == 2 or abs(new[1] - curr[1]) == 2:
+                    path_board.append(([f"JUMP from {curr} to {new}.", f"EXIT from {new}."], board.pieces.copy()))
 
-class PathTree:
-    def __init__(self, root):
-        self.root = root
+                else:
+                    path_board.append(([f"MOVE from {curr} to {new}.", f"EXIT from {new}."], board.pieces.copy()))
+            else:
+                new_piece = Piece(tuple(new), self.colour)
+                board.pieces.append(new_piece)
+                if abs(new[0] - curr[0]) == 2 or abs(new[1] - curr[1]) == 2:
+                    path_board.append(([f"JUMP from {curr} to {new}."], board.pieces.copy()))
+                else:
+                    path_board.append(([f"MOVE from {curr} to {new}."], board.pieces.copy()))
+                board.pieces.remove(new_piece)
+        board.pieces.append(self)
+        return path_board
 
 class PathNode:
-    def __init__(self, board, cost, prior, next):
+    next = []
+    def __init__(self, board, cost, path, prior):
         self.board = board
         self.cost = cost
+        self.path = path
         self.prior = prior
-        self.next = next
+
+    def __lt__(self, other):
+        return self.cost < other.cost
+
+    def make_move(self, exit, furthest):
+        board = self.board
+        self.next = []
+        for piece in board.pieces:
+            piece_positions = piece.move_piece(board, exit)
+            for i in piece_positions:
+                self.next.append(new_board(i[1], board.blocks, exit))
+                summ = sum([self.next[-1].hexes[piece.coordinates].heuristic for piece in self.next[-1].pieces])
+                furthest.put2((1 + summ, PathNode(self.next[-1], 1 + summ, self.path + i[0], self)))
+        return
+
+def new_board(pieces, blocks, exit):
+    board = Board(pieces, blocks)
+    board.create_board(exit)
+    return board
 
 def next_step(current, board, exit):
     hexes = board.hexes
-    x,y = current
     poss = sorted([(n.heuristic, n.coordinates) for n in hexes[current].neighbours])
     poss = [p[1] for p in poss if p[0] == poss[0][0]]
-    if current in exit:
-        return "EXIT"
-    elif y >= 0:
-        return sorted(poss, reverse = True)[0]
-    else:
-        return sorted(poss)[0]
+    return poss
 
 def simulate():
     pass
@@ -165,23 +154,24 @@ def main():
     exit = Exit(data)
     exit_list = exit.exit_list()
 
-
-    pieces = [Piece(tuple(piece), [], data['colour']) for piece in data['pieces']]
-    all_blocks = [tuple(b) for b in data['blocks']] + [tuple(b) for b in data['pieces']]
+    pieces = [Piece(tuple(piece), data['colour']) for piece in data['pieces']]
 
     board = Board(pieces, [tuple(b) for b in data['blocks']])
     board.create_board(exit_list)
 
-    root = PathNode(board, 0, None, None)
-    tree = PathTree(root)
+    root = PathNode(board, sum([board.hexes[piece.coordinates].heuristic for piece in board.pieces]), [], None)
 
     furthest = PriorityQueue()
-    furthest.put2((sum([board.hexes[piece.coordinates].heuristic for piece in pieces]), board))
-
-    print(furthest.elements)
+    furthest.put2((0, root))
 
     while not furthest.empty():
-        total, board = furthest.get()
+        total, node = furthest.get()
+        node.make_move(exit_list, furthest)
+        if not board.pieces:
+            break
+
+    for i in node.path:
+        print(i)
 
     # while not furthest.empty():
     #     if debug == False:
