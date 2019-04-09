@@ -7,13 +7,13 @@ Authors:
 
 import sys
 import json
-import pdb
 
 """
 class for storing the board layout
 """
 class Hex:
     def __init__(self, cost, neighbours, colour, coordinates):
+
         # cost from moving from specific hex
         # to exit, independently
         self.cost = cost
@@ -149,45 +149,81 @@ assign_cost determines the number of steps required to exit from a specific
 coordinate in the board using breadth first search
 """
 def assign_cost(board, queue):
+
+    # we initialise the queue with the exit pieces
     while queue != []:
+
+        # we evauluate the node at the start of the queue
         curr = board[queue.pop(0)]
+
+        # if a neighbour of the current node has a cost higher than 1 more than
+        # the current node's cost we change the neighbour's cost and add the
+        # neighbour to the queue
         for i in curr.neighbours:
-            if curr.colour == 'white' and i.cost[0] > (curr.cost[0] + 1):
+            if i.cost[0] > (curr.cost[0] + 1):
                 i.cost[0] = curr.cost[0] + 1
                 queue.append(i.coordinates)
 
+"""
+multi_search takes the initial board state and the current data, to formulate
+a path for all pieces to exit the board starting from the closest piece
+"""
 def multi_search(board, data, exit):
-    colour = data['colour']
+
+    # find a path to exit for all the pieces on the board
     while data['pieces']:
+
+        # move a piece that is closest to the exit
         path_list = [(board[i].cost, board[i].coordinates) for i in data['pieces']]
         single_move(board, min(path_list)[1], data, exit)
 
-def single_move(board, coordinate, data, exit):
-    neighbours = [n.coordinates for n in board[coordinate].neighbours]
-    data['pieces'].remove(coordinate)
-    board[coordinate].colour = 'white'
-    if coordinate in exit:
-        print(f"EXIT from {coordinate}.")
-        assign_piece_cost(board, data)
-        return 1
-    else:
-        if not neighbours:
-            data['pieces'].remove(coordinate)
-            data['pieces'].append(coordinate)
-            return 0
-        next_coordinate = total(board, coordinate, neighbours, exit)
-        if abs(next_coordinate[0] - coordinate[0]) == 2 or abs(next_coordinate[1] -coordinate[1]) == 2:
-            print(f"JUMP from {coordinate} to {next_coordinate}.")
-        else:
-            print(f"MOVE from {coordinate} to {next_coordinate}.")
-        data['pieces'].insert(0, next_coordinate)
-        assign_piece_cost(board, data)
-    return 0
+"""
+single_move takes the current board state and the coordinates of piece and
+finds a neighbour that takes the piece closer to the exit, whilst reforming
+the board
+"""
+def single_move(board, piece, data, exit):
 
-def total(board, coordinate, neighbours, exit):
+    # find the coordinates of all neighbours of the current piece
+    neighbours = [n.coordinates for n in board[piece].neighbours]
+
+    #remove the piece from the list of pieces and change the associated hex
+    # to white
+    data['pieces'].remove(piece)
+    board[piece].colour = 'white'
+
+    # if the piece is at an exit hex, we re-evauluate the board immediately
+    if piece in exit:
+        print(f"EXIT from {piece}.")
+        assign_piece_cost(board, data)
+        return
+
+    # we find the neighbour that takes the piece closest to the exit this new
+    # coordinate is added to the list of pieces and re-evaluate the board
+    else:
+
+        # find the hex that takes the piece closest to the exit
+        next = total(board, neighbours, exit)
+        if abs(next[0] - piece[0]) == 2 or abs(next[1] -piece[1]) == 2:
+            print(f"JUMP from {piece} to {next}.")
+        else:
+            print(f"MOVE from {piece} to {next}.")
+        data['pieces'].append(next)
+        assign_piece_cost(board, data)
+        return
+
+"""
+total takes the current board state and the neighbours of a pieces
+and finds the neighbour that takes the piece closest to the exit
+"""
+def total(board, neighbours, exit):
     neighbours2 = []
+
+    # add the neighbours to a new_list with its associated cost
     for i in neighbours:
         neighbours2.append((board[i].cost, i))
+
+    # return a neighbour with the lowest cost
     return min(neighbours2)[1]
 
 def print_board(board_dict, message="", debug=True, **kwargs):
