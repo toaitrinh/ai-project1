@@ -42,12 +42,6 @@ def main():
     board = {}
     exit = assign_piece_cost(board, data)
 
-    temp_dict = {}
-    for i in board.keys():
-        temp_dict[i] = board[i].colour
-
-    print_board(temp_dict)
-
     # search for exit within board
     multi_search(board, data, exit)
 
@@ -64,6 +58,7 @@ assign_piece_cost takes the current board information from data
 to determine the current board state
 """
 def assign_piece_cost(board, data):
+
     # initialise the hexagonal game board
     add_hexes(board, data)
 
@@ -72,7 +67,7 @@ def assign_piece_cost(board, data):
     exit_copy = exit[:]
 
     # determine cost from exiting from piece location
-    assign_cost(board, exit, data['pieces'])
+    assign_cost(board, exit)
     return exit_copy
 
 """
@@ -80,8 +75,9 @@ add_hexes creates the board, intialising the cost, neighbours,
 colour and coordinates of each individual hex
 """
 def add_hexes(board, data):
+
     # add possible coordinates of hexes in game board_dict
-    # initialise cost of each piece to 1000
+    # initialise cost of each piece to 1000 and colour to white
     for i in range(-3,1):
         for j in range(-3-i, 4):
             board[(i,j)] = Hex([1000], [], 'white', (i,j))
@@ -97,23 +93,37 @@ def add_hexes(board, data):
     for block in data['blocks']:
         board[tuple(block)].colour = 'black'
 
+    # add all possible neighbours for a piece, dependant on piece colour
     for k,v in board.items():
-        for i in range(-1,2):
-            for j in range(-1,2):
-                new_coord = (k[0]+i,k[1]+j)
-                if i != j and new_coord in board:
-                    if board[k].colour == 'white':
-                        if board[new_coord].colour != 'black':
-                            v.neighbours.append(board[new_coord])
-                        elif (new_coord[0] + i, new_coord[1] + j) in board and board[(new_coord[0] + i, new_coord[1] + j)].colour != 'black':
-                            v.neighbours.append(board[(new_coord[0] + i, new_coord[1] + j)])
-                    elif board[k].colour in ('red', 'green', 'blue'):
-                        if board[new_coord].colour == 'white':
-                            v.neighbours.append(board[new_coord])
-                        elif (new_coord[0] + i, new_coord[1] + j) in board and board[(new_coord[0] + i, new_coord[1] + j)].colour == 'white':
-                            v.neighbours.append(board[(new_coord[0] + i, new_coord[1] + j)])
+        # possible neighbours have a difference within the below list
+        for i,j in [(-1,0),(-1,1), (0,-1), (0,1), (1,0), (1,-1)]:
+            new = (k[0]+i,k[1]+j)
 
+            # white (empty) pieces are neighbours to any other hex that is
+            # not a block
+            if new in board and board[k].colour == 'white':
+                if board[new].colour != 'black':
+                    v.neighbours.append(board[new])
+                elif (new[0] + i, new[1] + j) in board and (
+                board[(new[0] + i, new[1] + j)].colour != 'black'):
+                    v.neighbours.append(board[(new[0] + i, new[1] + j)])
+
+            # coloured pieces cannot move or jump to a non-white hex
+            elif new in board and board[k].colour != 'black':
+                if board[new].colour == 'white':
+                    v.neighbours.append(board[new])
+                elif (new[0] + i, new[1] + j) in board and (
+                board[(new[0] + i, new[1] + j)].colour == 'white'):
+                    v.neighbours.append(board[(new[0] + i, new[1] + j)])
+
+"""
+exit_list initialises the cost of the exit pieces in board and returns
+the possible exits dependent on the colour of the piece_list
+"""
 def exit_list(board, data):
+
+    # initialise all non-black exit pieces with a cost of 1, representing
+    # the number of moves to exit from an exit piece
     if data['colour'] == 'red':
         exit = [(3,-3), (3,-2), (3,-1), (3,0)]
         for i in exit:
@@ -131,10 +141,14 @@ def exit_list(board, data):
         for i in exit:
             if board[i].colour != 'black':
                 board[i].cost[0] = 1
+
     return exit
 
-def assign_cost(board, queue, pieces):
-    new_pieces = [tuple(i) for i in pieces]
+"""
+assign_cost determines the number of steps required to exit from a specific
+coordinate in the board using breadth first search
+"""
+def assign_cost(board, queue):
     while queue != []:
         curr = board[queue.pop(0)]
         for i in curr.neighbours:
@@ -142,29 +156,14 @@ def assign_cost(board, queue, pieces):
                 i.cost[0] = curr.cost[0] + 1
                 queue.append(i.coordinates)
 
-    for n_p in range(len(new_pieces)):
-        queue = [new_pieces[n_p]]
-        for i in range(-3,1):
-            for j in range(-3-i, 4):
-                board[(i,j)].cost.append(1000)
-        for i in range(1,4):
-            for j in range(-3,4-i):
-                board[(i,j)].cost.append(1000)
-
-        board[new_pieces[n_p]].cost[n_p +1] = 0
-        while queue != []:
-            curr = board[queue.pop(0)]
-            for now in curr.neighbours:
-                if now.cost[n_p+1] > (curr.cost[n_p+1] + 1):
-                    now.cost[n_p+1] = curr.cost[n_p+1] + 1
-                    queue.append(now.coordinates)
+def multi_search(board, data, exit):
+    colour = data['colour']
+    while data['pieces']:
+        path_list = [(board[i].cost, board[i].coordinates) for i in data['pieces']]
+        single_move(board, min(path_list)[1], data, exit)
 
 def single_move(board, coordinate, data, exit):
     neighbours = [n.coordinates for n in board[coordinate].neighbours]
-    if not neighbours:
-        data['pieces'].remove(coordinate)
-        data['pieces'].append(coordinate)
-        return 0
     data['pieces'].remove(coordinate)
     board[coordinate].colour = 'white'
     if coordinate in exit:
@@ -172,6 +171,10 @@ def single_move(board, coordinate, data, exit):
         assign_piece_cost(board, data)
         return 1
     else:
+        if not neighbours:
+            data['pieces'].remove(coordinate)
+            data['pieces'].append(coordinate)
+            return 0
         next_coordinate = total(board, coordinate, neighbours, exit)
         if abs(next_coordinate[0] - coordinate[0]) == 2 or abs(next_coordinate[1] -coordinate[1]) == 2:
             print(f"JUMP from {coordinate} to {next_coordinate}.")
@@ -186,41 +189,6 @@ def total(board, coordinate, neighbours, exit):
     for i in neighbours:
         neighbours2.append((board[i].cost, i))
     return min(neighbours2)[1]
-
-def dist_to_exit(board, piece, exit):
-    dist = 0
-    for i in exit:
-        dist += (board[i].coordinates[0] - board[piece].coordinates[0])**2 + \
-            (board[i].coordinates[1] - board[piece].coordinates[1])**2
-    return dist
-
-def multi_search(board, data, exit):
-    colour = data['colour']
-    while data['pieces']:
-        path_list = [(board[i].cost, board[i].coordinates) for i in data['pieces']]
-        single_move(board, min(path_list)[1], data, exit)
-
-
-
-def choose_piece(board, data, piece_list, exit):
-    lst = []
-    for piece in piece_list:
-        coordinate = piece
-        neighbours = [n.coordinates for n in board[coordinate].neighbours]
-        if not neighbours:
-            continue
-        data['pieces'].remove(coordinate)
-        next_coordinate = total(board, coordinate, neighbours, exit)
-        original = sum([board[tuple(i)].cost[0] for i in data['pieces'] if tuple(i) != coordinate])
-        data['pieces'].append(next_coordinate)
-        assign_piece_cost(board, data)
-        data['pieces'].remove(next_coordinate)
-        new  = sum([board[tuple(i)].cost[0] for i in data['pieces'] if tuple(i) != next_coordinate])
-        data['pieces'].append(coordinate)
-        assign_piece_cost(board, data)
-        lst.append((original-new, coordinate))
-    lst = sorted(lst)
-    return m[1]
 
 def print_board(board_dict, message="", debug=True, **kwargs):
     """
