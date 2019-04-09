@@ -9,16 +9,20 @@ import sys
 import json
 import pdb
 
-# class for storing the board layout
+"""
+class for storing the board layout
+"""
 class Hex:
     def __init__(self, cost, neighbours, colour, coordinates):
-        # cost from moving from specific hex to exit, independently
+        # cost from moving from specific hex
+        # to exit, independently
         self.cost = cost
 
         # list of neighbouring hexes, stored as hex objects
         self.neighbours = neighbours
 
-        # colour of hex, blocks stored as black, and empty hexes as white
+        # colour of hex, blocks stored as black
+        # and empty hexes as white
         self.colour = colour
 
         # coordinates of hex
@@ -30,9 +34,14 @@ def main():
     with open(sys.argv[1]) as file:
         data = json.load(file)
 
+    # convert data values for pieces and blocks from
+    # list of lists to list of tuples
+    list_to_tuple(data)
+
     # initialise the board
     board = {}
     exit = assign_piece_cost(board, data)
+
     temp_dict = {}
     for i in board.keys():
         temp_dict[i] = board[i].colour
@@ -42,8 +51,37 @@ def main():
     # search for exit within board
     multi_search(board, data, exit)
 
+"""
+list_to_tuple changes the data values for pieces and blocks
+from a list of lists, to list of tuples
+"""
+def list_to_tuple(data):
+    data['pieces'] = [tuple(i) for i in data['pieces']]
+    data['blocks'] = [tuple(i) for i in data['blocks']]
 
+"""
+assign_piece_cost takes the current board information from data
+to determine the current board state
+"""
+def assign_piece_cost(board, data):
+    # initialise the hexagonal game board
+    add_hexes(board, data)
+
+    # determine the goal hexes based on colour of pieces
+    exit = exit_list(board, data)
+    exit_copy = exit[:]
+
+    # determine cost from exiting from piece location
+    assign_cost(board, exit, data['pieces'])
+    return exit_copy
+
+"""
+add_hexes creates the board, intialising the cost, neighbours,
+colour and coordinates of each individual hex
+"""
 def add_hexes(board, data):
+    # add possible coordinates of hexes in game board_dict
+    # initialise cost of each piece to 1000
     for i in range(-3,1):
         for j in range(-3-i, 4):
             board[(i,j)] = Hex([1000], [], 'white', (i,j))
@@ -51,9 +89,11 @@ def add_hexes(board, data):
         for j in range(-3,4-i):
             board[(i,j)] = Hex([1000], [], 'white', (i,j))
 
+    # change colour of pieces to colour in data
     for block in data['pieces']:
-        board[tuple(block)].colour = data['colour']
+        board[block].colour = data['colour']
 
+    # change colour of blocks to black
     for block in data['blocks']:
         board[tuple(block)].colour = 'black'
 
@@ -62,12 +102,15 @@ def add_hexes(board, data):
             for j in range(-1,2):
                 new_coord = (k[0]+i,k[1]+j)
                 if i != j and new_coord in board:
+                    if board[new_coord].colour == 'white':
+                        v.neighbours.append(board[new_coord])
+                    elif (new_coord[0] + i, new_coord[1] + j) in board and board[(new_coord[0] + i, new_coord[1] + j)].colour == 'white':
+                        v.neighbours.append(board[(new_coord[0] + i, new_coord[1] + j)])
                     if board[k].colour == 'white':
-                        if board[new_coord].colour in ('white', 'red', 'green', 'blue'):
+                        if board[new_coord].colour != 'black':
                             v.neighbours.append(board[new_coord])
-                        if board[new_coord].colour in ('black', 'red', 'green', 'blue'):
-                            if (new_coord[0] + i, new_coord[1] + j) in board and board[(new_coord[0] + i, new_coord[1] + j)].colour != 'black':
-                                v.neighbours.append(board[(new_coord[0] + i, new_coord[1] + j)])
+                        elif (new_coord[0] + i, new_coord[1] + j) in board and board[(new_coord[0] + i, new_coord[1] + j)].colour != 'black':
+                            v.neighbours.append(board[(new_coord[0] + i, new_coord[1] + j)])
                     elif board[k].colour in ('red', 'green', 'blue'):
                         if board[new_coord].colour == 'white':
                             v.neighbours.append(board[new_coord])
@@ -120,16 +163,9 @@ def assign_cost(board, queue, pieces):
                     now.cost[n_p+1] = curr.cost[n_p+1] + 1
                     queue.append(now.coordinates)
 
-def assign_piece_cost(board, data):
-    add_hexes(board, data)
-    exit = exit_list(board, data)
-    exit_copy = exit[:]
-    assign_cost(board, exit, data['pieces'])
-    return exit_copy
-
 def single_move(board, coordinate, data, exit):
     neighbours = [n.coordinates for n in board[coordinate].neighbours]
-    data['pieces'].remove(list(coordinate))
+    data['pieces'].remove(coordinate)
     board[coordinate].colour = 'white'
     if coordinate in exit:
         print(f"EXIT from {coordinate}.")
@@ -142,7 +178,7 @@ def single_move(board, coordinate, data, exit):
         else:
             print(f"MOVE from {coordinate} to {next_coordinate}.")
         coordinate = next_coordinate
-        data['pieces'].append(list(coordinate))
+        data['pieces'].append(coordinate)
         assign_piece_cost(board, data)
     return
 
@@ -184,14 +220,14 @@ def choose_piece(board, data, piece_list, exit):
         neighbours = [n.coordinates for n in board[coordinate].neighbours]
         if not neighbours:
             continue
-        data['pieces'].remove(list(coordinate))
+        data['pieces'].remove(coordinate)
         next_coordinate = total(board, coordinate, neighbours, exit)
         original = sum([board[tuple(i)].cost[0] for i in data['pieces'] if tuple(i) != coordinate])
-        data['pieces'].append(list(next_coordinate))
+        data['pieces'].append(next_coordinate)
         assign_piece_cost(board, data)
-        data['pieces'].remove(list(next_coordinate))
+        data['pieces'].remove(next_coordinate)
         new  = sum([board[tuple(i)].cost[0] for i in data['pieces'] if tuple(i) != next_coordinate])
-        data['pieces'].append(list(coordinate))
+        data['pieces'].append(coordinate)
         assign_piece_cost(board, data)
         lst.append((original-new, coordinate))
     lst = sorted(lst)
