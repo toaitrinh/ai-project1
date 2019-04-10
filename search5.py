@@ -141,7 +141,6 @@ def exit_list(board, data):
         for i in exit:
             if board[i].colour != 'black':
                 board[i].cost[0] = 1
-
     return exit
 
 """
